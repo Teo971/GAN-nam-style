@@ -1,85 +1,87 @@
+#%matplotlib inline
+import argparse
+import os
+import random
 import torch
 import torch.nn as nn
+import torch.nn.parallel
 import torch.optim as optim
+import torch.utils.data
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
+import torchvision.utils as vutils
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from IPython.display import HTML
+from pathlib import Path
 
-class Generator(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(Generator, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.tanh(self.fc2(x))
-        return x
-class Discriminator(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(Discriminator, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.sigmoid(self.fc2(x))
-        return x
+# Set random seed for reproducibility
+manualSeed = 999
+#manualSeed = random.randint(1, 10000) # use if you want new results
+print("Random Seed: ", manualSeed)
+random.seed(manualSeed)
+torch.manual_seed(manualSeed)
+torch.use_deterministic_algorithms(True) # Needed for reproducible results
 
 # Set the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Set the input and output sizes
-input_size = 784
-hidden_size = 256
-output_size = 1
 # Root directory for dataset
-dataroot = ""
-dataset = torchvision.datasets.MNIST(root=dataroot, download=True, transform=transforms.Compose([])
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True)
+dataroot = Path("C:/Users/frate/OneDrive/Bureau/Insa/TC/4TC/TIP/DataSet/Abjad.v1i.yolov7pytorch/train/Test images")
+# Number of workers for dataloader
+workers = 2
 
-# Create the discriminator and generator
-discriminator = Discriminator(input_size, hidden_size, output_size).to(device)
-generator = Generator(input_size, hidden_size, output_size).to(device)
+# Batch size during training
+batch_size = 128
 
-# Set the loss function and optimizers
-loss_fn = nn.BCEWithLogitsLoss()
-d_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.0002)
-g_optimizer = torch.optim.Adam(generator.parameters(), lr=0.0002)
+# Spatial size of training images. All images will be resized to this size using a transformer.
+image_size = 64
 
-# Set the number of epochs and the noise size
-num_epochs = 200
-noise_size = 100
+# Number of channels in the training images. For color images this is 3
+nc = 3
 
-# Training loop
-for epoch in range(num_epochs):
-  for i, (real_images, _) in enumerate(dataloader):
-    # Get the batch size
-    batch_size = real_images.size(0)
+# Size of z latent vector (i.e. size of generator input)
+nz = 100
 
-# Generate fake images
-noise = torch.randn(batch_size, noise_size).to(device)
-fake_images = generator(noise)
+# Size of feature maps in generator
+ngf = 64
 
-# Train the discriminator on real and fake images
-d_real = discriminator(real_images)
-d_fake = discriminator(fake_images)
+# Size of feature maps in discriminator
+ndf = 64
 
-# Calculate the loss
-real_loss = loss_fn(d_real, torch.ones_like(d_real))
-fake_loss = loss_fn(d_fake, torch.zeros_like(d_fake))
-d_loss = real_loss + fake_loss
+# Number of training epochs
+num_epochs = 5
 
-# Backpropagate and optimize
-d_optimizer.zero_grad()
-d_loss.backward()
-d_optimizer.step()
+# Learning rate for optimizers
+lr = 0.0002
 
-# Train the generator
-d_fake = discriminator(fake_images)
-g_loss = loss_fn(d_fake, torch.ones_like(d_fake))
+# Beta1 hyperparameter for Adam optimizers
+beta1 = 0.5
 
-# Backpropagate and optimize
-g_optimizer.zero_grad()
-g_loss.backward()
-g_optimizer.step()
+# Number of GPUs available. Use 0 for CPU mode.
+ngpu = 1
+# We can use an image folder dataset the way we have it setup.
+# Create the dataset
+dataset = dset.ImageFolder(root=dataroot,
+                           transform=transforms.Compose([
+                               transforms.Resize(image_size),
+                               transforms.CenterCrop(image_size),
+                               transforms.ToTensor(),
+                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                           ]))
+# Create the dataloader
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                         shuffle=True, num_workers=workers)
 
-# Print the loss every 50 batches
-if (i+1) % 50 == 0:
-    print('Epoch [{}/{}], Step [{}/{}], d_loss: {:.4f}, g_loss: {:.4f}' 
-            .format(epoch+1, num_epochs, i+1, len(dataloader), d_loss.item(), g_loss.item()))
+# Decide which device we want to run on
+device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+# Plot some training images
+real_batch = next(iter(dataloader))
+plt.figure(figsize=(8,8))
+plt.axis("off")
+plt.title("Training Images")
+plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
+plt.show()
+
