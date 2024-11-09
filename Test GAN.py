@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import modèle as mods
-from IPython.display import HTML
+
 from pathlib import Path
 
 # Set random seed for reproducibility
@@ -29,7 +29,7 @@ torch.use_deterministic_algorithms(True) # Needed for reproducible results
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Root directory for dataset
-dataroot = Path("C:/Users/frate/OneDrive/Bureau/Insa/TC/4TC/TIP/DataSet/Abjad.v1i.yolov7pytorch/train/Test images")
+dataroot = Path("C:/dataset_gan/entrain")
 # Number of workers for dataloader
 workers = 2
 
