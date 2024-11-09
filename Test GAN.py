@@ -96,17 +96,8 @@ if __name__ == "__main__":
     plt.title("Training Images")
     plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
     plt.show()
-    
-    noise_dim = 100          
+  
 
-    generator = mods.Generator(noise_dim=noise_dim, out_channels=3)
-    discriminator = mods.Discriminator(in_channels=3)
-
-    # Loss fct
-    criterion = nn.BCELoss()
-
-    optimizer_g = optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
-    optimizer_d = optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
 
     # Create the Discriminator
     netD = mods.Discriminator(ngpu).to(device)
