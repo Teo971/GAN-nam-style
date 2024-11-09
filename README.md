@@ -7,3 +7,4 @@ Dataset du premier code: https://universe.roboflow.com/tugas-akhir-nkru1/abjad-g
 
 Modules à installer: pip install torch
 pip install torchvision
+pip install pathlib
