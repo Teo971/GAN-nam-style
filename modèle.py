@@ -67,5 +67,5 @@ noise = torch.randn((1, noise_dim, 1, 1))   # bruit aleatoire
 fake_image = generator(noise)               
 real_or_fake = discriminator(fake_image)    
 
-print("taille d'image generee：", fake_image.shape)       # torch.Size([1, 3, 64, 64])
-print("taille de output de discriminateur：", real_or_fake.shape)    # torch.Size([1, 1, 1, 1])
+print("taille d'image generee:", fake_image.shape)       # torch.Size([1, 3, 64, 64])
+print("taille de output de discriminateur:", real_or_fake.shape)    # torch.Size([1, 1, 1, 1])
