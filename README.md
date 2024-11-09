@@ -5,6 +5,6 @@ site pour utiliser pytorch https://pytorch.org/tutorials/beginner/dcgan_faces_tu
 
 Dataset du premier code: https://universe.roboflow.com/tugas-akhir-nkru1/abjad-gmxju/dataset/1 J'ai pris la version Yolo v7 pytorch
 
-Modules à installer: pip install torch
-pip install torchvision
-pip install pathlib
+Modules à installer: pip install torch;
+pip install torchvision;
+pip install pathlib;
