@@ -49,23 +49,11 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2, inplace=True),
             
-            nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0, bias=False),
+            nn.Conv2d(512, in_channels, kernel_size=4, stride=1, padding=0, bias=False),
             nn.Sigmoid()  
         )
 
     def forward(self, x):
         return self.model(x)
 
-noise_dim = 100      # bruit
-out_channels = 3     # RGB
 
-generator = Generator(noise_dim=noise_dim, out_channels=out_channels)
-discriminator = Discriminator(in_channels=out_channels)
-
-# test
-noise = torch.randn((1, noise_dim, 1, 1))   # bruit aleatoire
-fake_image = generator(noise)               
-real_or_fake = discriminator(fake_image)    
-
-print("taille d'image generee:", fake_image.shape)       # torch.Size([1, 3, 64, 64])
-print("taille de output de discriminateur:", real_or_fake.shape)    # torch.Size([1, 1, 1, 1])
