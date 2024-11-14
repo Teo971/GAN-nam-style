@@ -14,13 +14,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import modèle as mods
+import time
 
 from pathlib import Path
 
 # Set random seed for reproducibility
 manualSeed = 999
 #manualSeed = random.randint(1, 10000) # use if you want new results
-print("Random Seed: ", manualSeed)
+#print("Random Seed: ", manualSeed)
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 torch.use_deterministic_algorithms(True) # Needed for reproducible results
@@ -29,7 +30,7 @@ torch.use_deterministic_algorithms(True) # Needed for reproducible results
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Root directory for dataset
-dataroot = Path("C:/dataset_gan/entrain")
+dataroot = Path("C:/Users/frate/OneDrive/Bureau/Insa/TC/4TC/TIP/DataSet/Abjad.v1i.yolov7pytorch/train/Test images")
 # Number of workers for dataloader
 workers = 2
 
@@ -52,7 +53,7 @@ ngf = 64
 ndf = 64
 
 # Number of training epochs
-num_epochs = 5
+num_epochs = 100
 
 # Learning rate for optimizers
 lr = 0.0002
@@ -87,17 +88,16 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
-if __name__ == "__main__":
-    # Your existing code goes here
-    # For example:
-    real_batch = next(iter(dataloader))
+"""real_batch = next(iter(dataloader))
     plt.figure(figsize=(8,8))
     plt.axis("off")
     plt.title("Training Images")
     plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
-    plt.show()
-  
+    plt.show()"""
 
+if __name__ == "__main__":
+    # Your existing code goes here
+    # For example:
 
     # Create the Discriminator
     netD = mods.Discriminator(ngpu).to(device)
@@ -151,6 +151,7 @@ if __name__ == "__main__":
     iters = 0
 
     print("Starting Training Loop...")
+    t0 = time.time()   
     # For each epoch
     for epoch in range(num_epochs):
         # For each batch in the dataloader
@@ -223,6 +224,13 @@ if __name__ == "__main__":
                 img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
             iters += 1
+    plt.subplot(1,2,2)
+    plt.axis("off")
+    plt.title("Fake Images")
+    plt.imshow(np.transpose(img_list[-1],(1,2,0)))
+    plt.show()
+    print("Training Time: ", time.time()-t0)
+    
     plt.figure(figsize=(10,5))
     plt.title("Generator and Discriminator Loss During Training")
     plt.plot(G_losses,label="G")
