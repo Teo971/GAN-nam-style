@@ -18,29 +18,44 @@ import time
 from pathlib import Path
 
 # Define WGAN Generator
+import torch
+import torch.nn as nn
+
 class Generator(nn.Module):
     def __init__(self, ngpu, nz=100):
         super(Generator, self).__init__()
         self.ngpu = ngpu
         self.model = nn.Sequential(
-            nn.ConvTranspose2d(nz, 512, kernel_size=4, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(512),
+            # Fully connected layer to transform input noise vector to a high-dimensional feature map
+            nn.Linear(nz, 512 * 4 * 4),  # Transform to 512 feature maps of 4x4
+            nn.BatchNorm1d(512 * 4 * 4),  # Use BatchNorm1d for 1D output from Linear
             nn.ReLU(True),
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),
+            
+            # Reshape to 4D tensor (batch_size, 512, 4, 4)
+            nn.Unflatten(1, (512, 4, 4)),
+            
+            # Use ConvTranspose2d layers to upscale the feature maps
+            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),  # 8x8
             nn.BatchNorm2d(256),
             nn.ReLU(True),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=False),
+
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=False),  # 16x16
             nn.BatchNorm2d(128),
             nn.ReLU(True),
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=False),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=False),  # 32x32
             nn.BatchNorm2d(64),
             nn.ReLU(True),
-            nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1, bias=False),
+
+            nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1, bias=False),  # 64x64 (output size)
             nn.Tanh()
         )
 
     def forward(self, x):
-        return self.model(x)
+      x = x.view(x.size(0), -1)  
+      return self.model(x)
+
+
 
 # Define WGAN Discriminator (Critic)
 class Discriminator(nn.Module):
@@ -81,8 +96,8 @@ nc = 3
 nz = 100
 ngf = 64
 ndf = 64
-num_epochs = 120
-lr = 0.00002
+num_epochs = 50
+lr = 0.00001
 ngpu = 1
 critic_iterations = 5  # Number of updates for Discriminator per Generator update
 weight_clip = 0.01     # Clipping parameter for weight constraints in WGAN
@@ -123,15 +138,15 @@ t0 = time.time()
 G_losses, D_losses, img_list = [], [], []
 fixed_noise = torch.randn(64, nz, 1, 1, device=device)
 
-# parameter lambda of GP 
+# parameter lambda of GP
 lambda_gp = 10
 
 def compute_gradient_penalty(critic, real_samples, fake_samples):
-    
+
     alpha = torch.rand(real_samples.size(0), 1, 1, 1, device=device).expand_as(real_samples)
     interpolates = (alpha * real_samples + (1 - alpha) * fake_samples).requires_grad_(True)
 
-    
+
     d_interpolates = critic(interpolates)
     fake = torch.ones(d_interpolates.size(), device=device, requires_grad=False)
 
@@ -218,3 +233,4 @@ plt.ylabel("Loss")
 plt.legend()
 plt.show()
 print("Training Time: ", time.time() - t0)
+
