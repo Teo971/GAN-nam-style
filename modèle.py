@@ -7,9 +7,13 @@ class Generator(nn.Module):
         self.ngpu = ngpu
         
         self.model = nn.Sequential(
-            nn.ConvTranspose2d(nc, 512, kernel_size=4, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(512),
+            # Fully connected layer to transform input noise vector to a high-dimensional feature map
+            nn.Linear(nz, 512 * 4 * 4),  # Transform to 512 feature maps of 4x4
+            nn.BatchNorm1d(512 * 4 * 4),  # Use BatchNorm1d for 1D output from Linear
             nn.ReLU(True),
+            
+            # Reshape to 4D tensor (batch_size, 512, 4, 4)
+            nn.Unflatten(1, (512, 4, 4)),
             
             nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(256),
@@ -28,6 +32,7 @@ class Generator(nn.Module):
         )
 
     def forward(self, x):
+        x = x.view(x.size(0), -1)  
         return self.model(x)
 
 class Discriminator(nn.Module):
