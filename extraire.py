@@ -1,3 +1,6 @@
+import torch
+import modèle as mod
+
 # enregistrer les modeles
 torch.save(netG.state_dict(), "generator.pth")
 torch.save(netD.state_dict(), "discriminator.pth")
@@ -5,8 +8,8 @@ torch.save(netD.state_dict(), "discriminator.pth")
 # torch.save(netD, "discriminator_full.pth")
 
 # chargement de modele
-netG = Generator(ngpu).to(device)
-netD = Discriminator(ngpu).to(device)
+netG = mod.Generator(ngpu).to(device)
+netD = mod.Discriminator(ngpu).to(device)
 
 netG.load_state_dict(torch.load("generator.pth"))
 netD.load_state_dict(torch.load("discriminator.pth"))
