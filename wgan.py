@@ -30,11 +30,10 @@ class Generator(nn.Module):
             nn.Linear(nz, 512 * 4 * 4),  # Transform to 512 feature maps of 4x4
             nn.BatchNorm1d(512 * 4 * 4),  # Use BatchNorm1d for 1D output from Linear
             nn.ReLU(True),
-            
+
             # Reshape to 4D tensor (batch_size, 512, 4, 4)
             nn.Unflatten(1, (512, 4, 4)),
-            
-            # Use ConvTranspose2d layers to upscale the feature maps
+
             nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),  # 8x8
             nn.BatchNorm2d(256),
             nn.ReLU(True),
@@ -52,7 +51,7 @@ class Generator(nn.Module):
         )
 
     def forward(self, x):
-      x = x.view(x.size(0), -1)  
+      x = x.view(x.size(0), -1)
       return self.model(x)
 
 
@@ -90,14 +89,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparameters and DataLoader
 dataroot = Path("/content/drive/MyDrive/dataset_gan")
-batch_size = 128
+batch_size = 48
 image_size = 64
 nc = 3
 nz = 100
 ngf = 64
 ndf = 64
-num_epochs = 50
-lr = 0.00001
+num_epochs = 150
+lr = 0.001
 ngpu = 1
 critic_iterations = 5  # Number of updates for Discriminator per Generator update
 weight_clip = 0.01     # Clipping parameter for weight constraints in WGAN
@@ -129,8 +128,9 @@ netD.apply(weights_init)
 netG.apply(weights_init)
 
 # Optimizers
-optimizerD = optim.RMSprop(netD.parameters(), lr=lr)
-optimizerG = optim.RMSprop(netG.parameters(), lr=lr)
+optimizerD = optim.Adam(netD.parameters(), lr=0.000005, betas=(0.5, 0.9))
+optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(0.5, 0.9))
+
 
 # Training Loop
 print("Starting Training Loop...")
@@ -139,7 +139,7 @@ G_losses, D_losses, img_list = [], [], []
 fixed_noise = torch.randn(64, nz, 1, 1, device=device)
 
 # parameter lambda of GP
-lambda_gp = 10
+lambda_gp = 5
 
 def compute_gradient_penalty(critic, real_samples, fake_samples):
 
@@ -178,13 +178,13 @@ for epoch in range(num_epochs):
             output_real = netD(real_cpu)
             errD_real = -torch.mean(output_real)
 
-
             # Generate fake image batch
             noise = torch.randn(b_size, nz, 1, 1, device=device)
             fake = netG(noise)
             output_fake = netD(fake.detach())
             errD_fake = torch.mean(output_fake)
 
+            #print(f"Real Samples Shape: {real_cpu.shape}, Fake Samples Shape: {fake.shape}")
             gradient_penalty = compute_gradient_penalty(netD, real_cpu, fake)
             d_loss = errD_fake + errD_real + gradient_penalty
             d_loss.backward()
@@ -193,8 +193,8 @@ for epoch in range(num_epochs):
             optimizerD.step()
 
             # Clip weights for WGAN
-            for p in netD.parameters():
-                p.data.clamp_(-weight_clip, weight_clip)
+            # for p in netD.parameters():
+                # p.data.clamp_(-weight_clip, weight_clip)
 
         D_losses.append(errD_real.item() + errD_fake.item())
 
@@ -220,6 +220,8 @@ for epoch in range(num_epochs):
                 fake = netG(fixed_noise).detach().cpu()
             img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
+torch.save(netG.state_dict(), "generator.pth")
+
 # Display fake images and loss
 plt.subplot(1,2,1)
 plt.axis("off")
@@ -231,6 +233,10 @@ plt.plot(D_losses, label="D")
 plt.xlabel("iterations")
 plt.ylabel("Loss")
 plt.legend()
+
+plt.subplots_adjust(wspace=0.5)
+
 plt.show()
 print("Training Time: ", time.time() - t0)
+
 
